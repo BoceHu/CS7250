@@ -12,6 +12,10 @@ python train.py
 Create directory in project root directory to store the feature maps
 ```
 mkdir feature_map
+cd feature_map
+mkdir 0
+...
+mkdir 9
 ```
 In project root directory, run the feature map generation script by
 ```
