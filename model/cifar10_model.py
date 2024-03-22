@@ -54,7 +54,7 @@ class cifar10net(torch.nn.Module):
         out = self.linear(out)
         # B C H W
 
-        return out
+        return out, out_res
 
 
 if __name__ == '__main__':
