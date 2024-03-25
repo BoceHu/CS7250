@@ -83,7 +83,7 @@ for data in tqdm(train_loader):
     rot_90 = torch.rot90(inputs[0], k=1, dims=(1, 2)).view(1, C, H, W)
     rot_180 = torch.rot90(inputs[0], k=2, dims=(1, 2)).view(1, C, H, W)
     rot_270 = torch.rot90(inputs[0], k=3, dims=(1, 2)).view(1, C, H, W)
-    inputs = torch.vstack([inputs, rot_90, rot_180, rot_270])
+    inputs = torch.vstack([inputs, rot_90, rot_180, rot_270, inputs])
     
     outputs, resnet_output = net(inputs)
     eq_outputs, eq_resnet_output = eqnet(inputs)
@@ -106,6 +106,8 @@ for data in tqdm(train_loader):
                 ...
             270:
                 ...
+            360:
+                ...
         CNN:
             0:
                 x0: tensor
@@ -120,6 +122,8 @@ for data in tqdm(train_loader):
                 ...
             270:
                 ...
+            360:
+                ...
     }
     '''
     store_dict = dict()
@@ -129,11 +133,13 @@ for data in tqdm(train_loader):
     store_dict['eq'][90] = dict()
     store_dict['eq'][180] = dict()
     store_dict['eq'][270] = dict()
+    store_dict['eq'][360] = dict()
     store_dict['CNN'] = dict()
     store_dict['CNN'][0] = dict()
     store_dict['CNN'][90] = dict()
     store_dict['CNN'][180] = dict()
     store_dict['CNN'][270] = dict()
+    store_dict['CNN'][360] = dict()
 
     for i in range(inputs.shape[0]):
 
@@ -159,7 +165,7 @@ for data in tqdm(test_loader):
     rot_90 = torch.rot90(inputs[0], k=1, dims=(1, 2)).view(1, C, H, W)
     rot_180 = torch.rot90(inputs[0], k=2, dims=(1, 2)).view(1, C, H, W)
     rot_270 = torch.rot90(inputs[0], k=3, dims=(1, 2)).view(1, C, H, W)
-    inputs = torch.vstack([inputs, rot_90, rot_180, rot_270])
+    inputs = torch.vstack([inputs, rot_90, rot_180, rot_270, inputs])
 
     outputs, resnet_output = net(images)
     eq_outputs, eq_resnet_output = eqnet(inputs)
@@ -171,12 +177,13 @@ for data in tqdm(test_loader):
     store_dict['eq'][0] = dict()
     store_dict['eq'][90] = dict()
     store_dict['eq'][180] = dict()
-    store_dict['eq'][270] = dict()
+    store_dict['eq'][360] = dict()
     store_dict['CNN'] = dict()
     store_dict['CNN'][0] = dict()
     store_dict['CNN'][90] = dict()
     store_dict['CNN'][180] = dict()
     store_dict['CNN'][270] = dict()
+    store_dict['CNN'][360] = dict()
 
     for i in range(inputs.shape[0]):
 

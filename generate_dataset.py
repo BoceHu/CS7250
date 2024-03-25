@@ -66,21 +66,19 @@ with open('data.csv', 'w', newline='') as csv_file:
                         base['x2'] = value['x2']
                         base['x3'] = value['x3']
                         base['x4'] = value['x4']
+                                            
+                    rot = int(rotation)
+
+                    new_row = dict()
+                    new_row['img_id'] = img_id
+                    new_row['class_id'] = class_id
+                    new_row['class_name'] = class_name
+                    new_row['rotation'] = rot
+                    new_row['eq'] = eq
+
+                    # compute cos similarity
+                    for name, feature_map in value.items():
+
+                        new_row[name+"_sim"] = compute_similarities(base[name], feature_map, rot)
                     
-                    else:
-                        
-                        rot = int(rotation)
-
-                        new_row = dict()
-                        new_row['img_id'] = img_id
-                        new_row['class_id'] = class_id
-                        new_row['class_name'] = class_name
-                        new_row['rotation'] = rot
-                        new_row['eq'] = eq
-
-                        # compute cos similarity
-                        for name, feature_map in value.items():
-
-                            new_row[name+"_sim"] = compute_similarities(base[name], feature_map, rot)
-                        
-                        writer.writerow(new_row)
+                    writer.writerow(new_row)
