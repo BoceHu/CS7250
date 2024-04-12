@@ -25,7 +25,7 @@ class_id_to_name = [
     'dog', 'frog', 'horse', 'ship', 'truck'
 ]
 
-with open('data.csv', 'w', newline='') as csv_file:
+with open('data_back_up.csv', 'w', newline='') as csv_file:
 
     fieldNames = [
         'img_id', 

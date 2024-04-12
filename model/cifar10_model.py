@@ -8,7 +8,7 @@ from einops import rearrange
 
 
 class cifar10net(torch.nn.Module):
-    def __init__(self, num_classes=10, in_size=64, flip=False, last_quotient=False, N=8, initialize=True,
+    def __init__(self, num_classes=10, in_size=64, flip=True, last_quotient=False, N=8, initialize=True,
                  backbone='resnet18'):
         super(cifar10net, self).__init__()
 
@@ -61,11 +61,12 @@ if __name__ == '__main__':
     # print(torch.cuda.is_available())
     torch.cuda.empty_cache()
     x = torch.randn(1, 3, 64, 64).to('cuda')
-    x90 = torch.rot90(x, k=1, dims=(2, 3))
+    x_flip = torch.flip(x, [2])
 
-    model = cifar10net(flip=False, N=8).to('cuda')
-    out = model(x)
-    out90 = model(x90)
+    model = cifar10net(flip=True, N=4).to('cuda')
+    out, out_res, x_ = model(x)
+    out_flip, out_res_flip, x_flip_ = model(x_flip)
+    # out_restore = torch.flip(out_flip[1][0].tensor, [2])
 
     # current_memory_allocated
     current_memory = torch.cuda.memory_allocated()

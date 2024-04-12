@@ -36,14 +36,13 @@ train_loader = DataLoader(train_dataset, batch_size=16, shuffle=True, num_worker
 test_loader = DataLoader(test_dataset, batch_size=16, shuffle=False, num_workers=2)
 
 # equivariant
-# net = cifar10net(N=2)
+net = cifar10net(N=4, flip=True, initialize=True)
 # regular CNN
-net = ResNet(BasicBlock, [2, 2, 2, 2])
+# net = ResNet(BasicBlock, [2, 2, 2, 2])
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 net.to(device)
 criterion = nn.CrossEntropyLoss()
 optimizer = optim.Adam(net.parameters(), lr=0.001)
-
 
 num_epochs = 40
 
@@ -58,7 +57,7 @@ for epoch in range(num_epochs):
 
         optimizer.zero_grad()
 
-        outputs,_ = net(inputs)
+        outputs, _ = net(inputs)
         loss = criterion(outputs, labels)
         loss.backward()
         optimizer.step()
@@ -84,7 +83,7 @@ for epoch in range(num_epochs):
 
     if current_accuracy > highest_accuracy:
         highest_accuracy = current_accuracy
-        torch.save(net.state_dict(), 'best_model_CNN.pth')
+        torch.save(net.state_dict(), 'best_model_D4.pth')
         print('Saving model with highest accuracy: {:.2f}%'.format(highest_accuracy))
 
 print('Finished Training')

@@ -9,7 +9,7 @@ def conv2d(feat_type_in, feat_type_hid, kernel_size, stride=1, groups=1, dilatio
 
 
 class BasicBlock(torch.nn.Module):
-    def __init__(self, in_planes, out_planes, flip=False, quotient=False, N=4, initialize=True, stride=1,
+    def __init__(self, in_planes, out_planes, flip=True, quotient=False, N=4, initialize=True, stride=1,
                  down_sample=None, dilation=1, kernel_size=3, norm_layer=None):
         super(BasicBlock, self).__init__()
         if flip:
@@ -55,7 +55,7 @@ class BasicBlock(torch.nn.Module):
 
 
 class ResNet_18(torch.nn.Module):
-    def __init__(self, block, layers, flip=False, quotient=False, N=4, initialize=True, insize=3):
+    def __init__(self, block, layers, flip=True, quotient=False, N=4, initialize=True, insize=3):
         super(ResNet_18, self).__init__()
         self.N = N
         self.quotient = quotient
@@ -95,7 +95,7 @@ class ResNet_18(torch.nn.Module):
         self.layer4 = self._make_layer(block, 64, layers[3], stride=1, flip=flip, N=N, initialize=initialize,
                                        quotient=quotient, pool=True)
 
-    def _make_layer(self, block, out_planes, block_num, stride=1, flip=False, N=4, initialize=True, quotient=False,
+    def _make_layer(self, block, out_planes, block_num, stride=1, flip=True, N=4, initialize=True, quotient=False,
                     pool=False):
         down_sample = None
         if self.in_planes != out_planes:
@@ -143,13 +143,13 @@ class ResNet_18(torch.nn.Module):
         return [feature_1, feature_2, feature_3, feature_4, feature_5]
 
 
-def resnet18(flip=False, N=4, initialize=True, quotient=False, insize=3):
+def resnet18(flip=True, N=4, initialize=True, quotient=False, insize=3):
     model = ResNet_18(BasicBlock, [2, 2, 2, 2], flip=flip, N=N, initialize=initialize, quotient=quotient, insize=insize)
 
     return model
 
 
-def resnet34(flip=False, N=4, initialize=True, quotient=False, insize=3):
+def resnet34(flip=True, N=4, initialize=True, quotient=False, insize=3):
     model = ResNet_18(BasicBlock, [3, 4, 6, 3], flip=flip, N=N, initialize=initialize, quotient=quotient, insize=insize)
 
     return model
@@ -159,17 +159,24 @@ if __name__ == '__main__':
     # print(torch.cuda.is_available())
     torch.cuda.empty_cache()
     x = torch.randn(1, 3, 64, 64).to('cuda')
-    x90 = torch.rot90(x, k=1, dims=(2, 3))
+    x_flip = x.flip([2])
+    # x90 = torch.rot90(x, k=1, dims=(2, 3))
 
-    model = resnet18(flip=False, N=8).to('cuda')
+    model = resnet18(flip=True, N=4).to('cuda')
     out = model(x)
-    out90 = model(x90)
+    out_flip = model(x_flip)
 
-    out90_0 = torch.rot90(out90[0].tensor, k=3, dims=(2, 3))
-    out90_1 = torch.rot90(out90[1].tensor, k=3, dims=(2, 3))
-    out90_2 = torch.rot90(out90[2].tensor, k=3, dims=(2, 3))
-    out90_3 = torch.rot90(out90[3].tensor, k=3, dims=(2, 3))
-    out90_4 = torch.rot90(out90[4].tensor, k=3, dims=(2, 3))
+    out_flip_0 = torch.flip(out_flip[0].tensor, [2])
+    out_flip_1 = torch.flip(out_flip[1].tensor, [2])
+    out_flip_2 = torch.flip(out_flip[2].tensor, [2])
+    out_flip_3 = torch.flip(out_flip[3].tensor, [2])
+    out_flip_4 = torch.flip(out_flip[4].tensor, [2])
+
+    # out90_0 = torch.rot90(out90[0].tensor, k=3, dims=(2, 3))
+    # out90_1 = torch.rot90(out90[1].tensor, k=3, dims=(2, 3))
+    # out90_2 = torch.rot90(out90[2].tensor, k=3, dims=(2, 3))
+    # out90_3 = torch.rot90(out90[3].tensor, k=3, dims=(2, 3))
+    # out90_4 = torch.rot90(out90[4].tensor, k=3, dims=(2, 3))
 
     print(out[-1].shape, out[-2].shape, out[-3].shape, out[-4].shape, out[-5].shape)
 
