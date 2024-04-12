@@ -25,7 +25,7 @@ class_id_to_name = [
     'dog', 'frog', 'horse', 'ship', 'truck'
 ]
 
-with open('data_2.csv', 'w', newline='') as csv_file:
+with open('data_flip.csv', 'w', newline='') as csv_file:
     fieldNames = [
         'img_id',
         'class_id', 'class_name',
