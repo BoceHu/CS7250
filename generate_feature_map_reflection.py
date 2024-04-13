@@ -62,24 +62,24 @@ eqnet.eval()
 eqnet.load_state_dict(torch.load('best_model_D2.pth'))
 net.load_state_dict(torch.load('best_model_CNN.pth'))
 
-counter = 50000
+counter = 0
 
 for data in tqdm(train_loader):
     inputs, label = data[0].to(device), data[1].to(device)
     C, H, W = inputs.shape[1], inputs.shape[2], inputs.shape[3]
     flip_h = torch.flip(inputs[0], [2]).view(1, C, H, W)
     flip_v = torch.flip(inputs[0], [1]).view(1, C, H, W)
-    inputs = torch.vstack([flip_h, flip_h, flip_v])
+    inputs = torch.vstack([inputs, flip_h, flip_v])
 
     outputs, resnet_output = net(inputs)
-    eq_outputs, eq_resnet_output = eqnet(inputs)
+    # eq_outputs, eq_resnet_output = eqnet(inputs)
 
     store_dict = dict()
     store_dict['img'] = inputs[0]
-    store_dict['eq'] = dict()
-    store_dict['eq']['original'] = dict()
-    store_dict['eq']['flip_h'] = dict()
-    store_dict['eq']['flip_v'] = dict()
+    # store_dict['eq'] = dict()
+    # store_dict['eq']['original'] = dict()
+    # store_dict['eq']['flip_h'] = dict()
+    # store_dict['eq']['flip_v'] = dict()
 
     store_dict['CNN'] = dict()
     store_dict['CNN']['original'] = dict()
@@ -92,8 +92,8 @@ for data in tqdm(train_loader):
         flip_type = flip_types[i]
 
         for num, intermediate_output in enumerate(resnet_output):
-            eq_feature_map = get_feature_map(eq_resnet_output[num][i].tensor.squeeze(0),N=4)
-            store_dict['eq'][flip_type]["x" + str(num)] = eq_feature_map
+            # eq_feature_map = get_feature_map(eq_resnet_output[num][i].tensor.squeeze(0),N=4)
+            # store_dict['eq'][flip_type]["x" + str(num)] = eq_feature_map
             feature_map = get_feature_map(resnet_output[num][i].squeeze(0), N=1)
             store_dict['CNN'][flip_type]["x" + str(num)] = feature_map
 
@@ -108,14 +108,14 @@ for data in tqdm(test_loader):
     inputs = torch.vstack([images, flip_h, flip_v])
 
     outputs, resnet_output = net(inputs)
-    eq_outputs, eq_resnet_output = eqnet(inputs)
+    # eq_outputs, eq_resnet_output = eqnet(inputs)
 
     store_dict = dict()
     store_dict['img'] = inputs[0]
-    store_dict['eq'] = dict()
-    store_dict['eq']['original'] = dict()
-    store_dict['eq']['flip_h'] = dict()
-    store_dict['eq']['flip_v'] = dict()
+    # store_dict['eq'] = dict()
+    # store_dict['eq']['original'] = dict()
+    # store_dict['eq']['flip_h'] = dict()
+    # store_dict['eq']['flip_v'] = dict()
 
     store_dict['CNN'] = dict()
     store_dict['CNN']['original'] = dict()
@@ -128,8 +128,8 @@ for data in tqdm(test_loader):
         flip_type = flip_types[i]
 
         for num, intermediate_output in enumerate(resnet_output):
-            eq_feature_map = get_feature_map(eq_resnet_output[num][i].tensor.squeeze(0))
-            store_dict['eq'][flip_type]["x" + str(num)] = eq_feature_map
+            # eq_feature_map = get_feature_map(eq_resnet_output[num][i].tensor.squeeze(0))
+            # store_dict['eq'][flip_type]["x" + str(num)] = eq_feature_map
             feature_map = get_feature_map(resnet_output[num][i].squeeze(0), N=1)
             store_dict['CNN'][flip_type]["x" + str(num)] = feature_map
 
