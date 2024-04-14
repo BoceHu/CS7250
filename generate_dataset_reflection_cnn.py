@@ -7,16 +7,28 @@ import glob
 from tqdm import tqdm
 
 
+# def compute_similarities(base, result, flip_type):
+#     base = base.flatten()
+#     if flip_type == 'flip_h':
+#         flipped_back_result = torch.flip(result, [1]).flatten()
+#     elif flip_type == 'flip_v':
+#         flipped_back_result = torch.flip(result, [0]).flatten()
+#     else:
+#         flipped_back_result = result.flatten()
+#
+#     sim = F.cosine_similarity(base, flipped_back_result, dim=0)
+#     return sim.item()
 def compute_similarities(base, result, flip_type):
-    base = base.flatten()
-    if flip_type == 'flip_h':
-        flipped_back_result = torch.flip(result, [1]).flatten()
-    elif flip_type == 'flip_v':
-        flipped_back_result = torch.flip(result, [0]).flatten()
-    else:
-        flipped_back_result = result.flatten()
+    result = result.flatten()
+    flipped_base = base.flatten()
+    # if flip_type == 'flip_h':
+    #     flipped_base = torch.flip(base, [1]).flatten()
+    # elif flip_type == 'flip_v':
+    #     flipped_base = torch.flip(base, [0]).flatten()
+    # else:
+    #     flipped_base = result.flatten()
 
-    sim = F.cosine_similarity(base, flipped_back_result, dim=0)
+    sim = F.cosine_similarity(flipped_base, result, dim=0)
     return sim.item()
 
 
@@ -28,7 +40,7 @@ class_id_to_name = [
     'dog', 'frog', 'horse', 'ship', 'truck'
 ]
 
-with open('data_3.csv', 'w', newline='') as csv_file:
+with open('data_4.csv', 'w', newline='') as csv_file:
     fieldNames = [
         'img_id',
         'class_id', 'class_name',
@@ -54,29 +66,29 @@ with open('data_3.csv', 'w', newline='') as csv_file:
             content = torch.load(file)
 
             # process feature maps
-            # for eq in range(2):
+            for eq in range(2):
 
-                # eq_field = 'eq' if eq == 1 else 'CNN'
-            eq_field = 'CNN'
-            base = dict()
-            for flip_type, value in content[eq_field].items():
+                eq_field = 'eq' if eq == 1 else 'CNN'
 
-                if flip_type == 'original':
-                    base['x0'] = value['x0']
-                    base['x1'] = value['x1']
-                    base['x2'] = value['x2']
-                    base['x3'] = value['x3']
-                    base['x4'] = value['x4']
+                base = dict()
+                for flip_type, value in content[eq_field].items():
 
-                new_row = dict()
-                new_row['img_id'] = img_id
-                new_row['class_id'] = class_id
-                new_row['class_name'] = class_name
-                new_row['flip_type'] = flip_type
-                new_row['eq'] = 0
+                    if flip_type == 'original':
+                        base['x0'] = value['x0']
+                        base['x1'] = value['x1']
+                        base['x2'] = value['x2']
+                        base['x3'] = value['x3']
+                        base['x4'] = value['x4']
 
-                # compute cos similarity
-                for name, feature_map in value.items():
-                    new_row[name + "_sim"] = compute_similarities(base[name], feature_map, flip_type)
+                    new_row = dict()
+                    new_row['img_id'] = img_id
+                    new_row['class_id'] = class_id
+                    new_row['class_name'] = class_name
+                    new_row['flip_type'] = flip_type
+                    new_row['eq'] = eq
 
-                writer.writerow(new_row)
+                    # compute cos similarity
+                    for name, feature_map in value.items():
+                        new_row[name + "_sim"] = compute_similarities(base[name], feature_map, flip_type)
+
+                    writer.writerow(new_row)
