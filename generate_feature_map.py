@@ -15,7 +15,7 @@ import matplotlib.pyplot as plt
 from rotate_imgs import rotate_image
 
 
-def get_feature_map(output, N=8):
+def get_feature_map(output, N=4):
 
     # input C x H x W
     output_sum = torch.sum(output, dim=(1, 2))
@@ -49,7 +49,7 @@ transform = transforms.Compose([
     normalize
 ])
 
-# train_data_path = Path.cwd() / 'cifar10/cifar10_64/train'
+train_data_path = Path.cwd() / 'cifar10/cifar10_64/train'
 test_data_path = Path.cwd() / 'cifar10/cifar10_64/test'
 
 # feature maps
@@ -62,7 +62,7 @@ train_loader = DataLoader(train_dataset, batch_size=1, shuffle=False, num_worker
 test_loader = DataLoader(test_dataset, batch_size=1, shuffle=False, num_workers=2)
 
 # equivariant
-eqnet = cifar10net(N=4, flip=True, initialize=False)
+eqnet = cifar10net(N=2, flip=True, initialize=False)
 # regular CNN
 net = ResNet(BasicBlock, [2, 2, 2, 2])
 
@@ -73,7 +73,7 @@ net.eval()
 eqnet.eval()
 
 # equivariant
-eqnet.load_state_dict(torch.load('best_model_D4.pth'))
+eqnet.load_state_dict(torch.load('best_model_D2.pth'))
 # regular CNN
 net.load_state_dict(torch.load('best_model_CNN.pth'))
 

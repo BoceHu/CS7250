@@ -6,18 +6,18 @@ import csv
 from pathlib import Path
 import glob
 from tqdm import tqdm
-from rotate_imgs import rotate_image
+from rotate_imgs import rotate_image, circle_mask
 
 
 def cos_score(base, result, angle):
 
-    base = base.flatten()
+    base = circle_mask(base).flatten()
     rotated_back_result =rotate_image(result.unsqueeze(0), -angle).flatten()
     sim = F.cosine_similarity(base, rotated_back_result, dim=0)
     return sim.item()
 
 def mse_score(base, result, angle):
-    base = base.flatten()
+    base = circle_mask(base).flatten()
     rotated_back_result =rotate_image(result.unsqueeze(0), -angle).flatten()
 
     sim = mean_squared_error(base, rotated_back_result)
