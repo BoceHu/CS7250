@@ -12,9 +12,11 @@ from tqdm import tqdm
 from model.cifar10_model import cifar10net
 from model.resnet import ResNet, BasicBlock
 import matplotlib.pyplot as plt
+from rotate_imgs import rotate_image
+from generate_feature_map import minimum_angle_of_rotation 
 
 
-def get_feature_map(output, N=2):
+def get_feature_map(output, N=8):
     output_sum = torch.sum(output, dim=(1, 2))
     valid_channels = output_sum != 0
     valid_channels = valid_channels.nonzero()
@@ -25,6 +27,11 @@ def get_feature_map(output, N=2):
     equi_feature_map = torch.mean(selected_slice, dim=0)
     return equi_feature_map
 
+# we want this number to be twice as large is it is in the GFM.py file
+# making this 90 gives us reflections of [0, 45, 135, 180]. This is good.
+# Note: ref(p) = ref(p + 180), so [0, 45, 135, 180] = [180, 225, 270, 315]
+minimum_angle_of_reflection = minimum_angle_of_rotation * 2  
+angles = range(0, 360, minimum_angle_of_reflection)
 
 MEAN = np.array([125.3, 123.0, 113.9]) / 255.0
 STD = np.array([63.0, 62.1, 66.7]) / 255.0
@@ -65,11 +72,12 @@ net.load_state_dict(torch.load('best_model_CNN.pth'))
 counter = 0
 
 for data in tqdm(train_loader):
+
+    # gets the reflected images
     inputs, label = data[0].to(device), data[1].to(device)
-    C, H, W = inputs.shape[1], inputs.shape[2], inputs.shape[3]
-    flip_h = torch.flip(inputs[0], [2]).view(1, C, H, W)
-    flip_v = torch.flip(inputs[0], [1]).view(1, C, H, W)
-    inputs = torch.vstack([inputs, flip_h, flip_v])
+    # rot(t) + ref(p) = ref(p + t/2)
+    reflected_images = [torch.flip(rotate_image(inputs[0], angle), [1]) for angle in angles]
+    inputs = torch.stack(reflected_images)
 
     outputs, resnet_output = net(inputs)
     eq_outputs, eq_resnet_output = eqnet(inputs)
@@ -77,35 +85,25 @@ for data in tqdm(train_loader):
     store_dict = dict()
     store_dict['img'] = inputs[0]
     store_dict['eq'] = dict()
-    store_dict['eq']['original'] = dict()
-    store_dict['eq']['flip_h'] = dict()
-    store_dict['eq']['flip_v'] = dict()
-
     store_dict['CNN'] = dict()
-    store_dict['CNN']['original'] = dict()
-    store_dict['CNN']['flip_h'] = dict()
-    store_dict['CNN']['flip_v'] = dict()
-
-    flip_types = ['original', 'flip_h', 'flip_v']
-
-    for i in range(inputs.shape[0]):
-        flip_type = flip_types[i]
-
-        for num, intermediate_output in enumerate(resnet_output):
-            eq_feature_map = get_feature_map(eq_resnet_output[num][i].tensor.squeeze(0), N=8)
-            store_dict['eq'][flip_type]["x" + str(num)] = eq_feature_map
-            feature_map = get_feature_map(resnet_output[num][i].squeeze(0), N=1)
-            store_dict['CNN'][flip_type]["x" + str(num)] = feature_map
+    for i, angle in enumerate(angles):
+        store_dict['eq'][angle // 2] = dict()
+        store_dict['CNN'][angle // 2] = dict()
+        # terminal eq
+        store_dict['eq'][angle // 2]["map"] = get_feature_map(eq_resnet_output[-1][i].tensor.squeeze(0), N=8)
+        # terminal trad
+        store_dict['CNN'][angle // 2]["map"] = get_feature_map(resnet_output[-1][i].squeeze(0), N=1)
 
     torch.save(store_dict, feature_map_path / str(label[0].item()) / f"{str(counter)}.pth")
     counter += 1
 
 for data in tqdm(test_loader):
-    images, label = data[0].to(device), data[1].to(device)
-    C, H, W = images.shape[1], images.shape[2], images.shape[3]
-    flip_h = torch.flip(images[0], [2]).view(1, C, H, W)
-    flip_v = torch.flip(images[0], [1]).view(1, C, H, W)
-    inputs = torch.vstack([images, flip_h, flip_v])
+    
+    # gets the reflected images
+    inputs, label = data[0].to(device), data[1].to(device)
+    # rot(t) + ref(p) = ref(p + t/2)
+    reflected_images = [torch.flip(rotate_image(inputs[0], angle), [1]) for angle in angles]
+    inputs = torch.stack(reflected_images)
 
     outputs, resnet_output = net(inputs)
     eq_outputs, eq_resnet_output = eqnet(inputs)
@@ -113,25 +111,14 @@ for data in tqdm(test_loader):
     store_dict = dict()
     store_dict['img'] = inputs[0]
     store_dict['eq'] = dict()
-    store_dict['eq']['original'] = dict()
-    store_dict['eq']['flip_h'] = dict()
-    store_dict['eq']['flip_v'] = dict()
-
     store_dict['CNN'] = dict()
-    store_dict['CNN']['original'] = dict()
-    store_dict['CNN']['flip_h'] = dict()
-    store_dict['CNN']['flip_v'] = dict()
-
-    flip_types = ['original', 'flip_h', 'flip_v']
-
-    for i in range(inputs.shape[0]):
-        flip_type = flip_types[i]
-
-        for num, intermediate_output in enumerate(resnet_output):
-            eq_feature_map = get_feature_map(eq_resnet_output[num][i].tensor.squeeze(0), N=8)
-            store_dict['eq'][flip_type]["x" + str(num)] = eq_feature_map
-            feature_map = get_feature_map(resnet_output[num][i].squeeze(0), N=1)
-            store_dict['CNN'][flip_type]["x" + str(num)] = feature_map
+    for i, angle in enumerate(angles):
+        store_dict['eq'][angle // 2] = dict()
+        store_dict['CNN'][angle // 2] = dict()
+        # terminal eq
+        store_dict['eq'][angle // 2]["map"] = get_feature_map(eq_resnet_output[-1][i].tensor.squeeze(0), N=8)
+        # terminal trad
+        store_dict['CNN'][angle // 2]["map"] = get_feature_map(resnet_output[-1][i].squeeze(0), N=1)
 
     torch.save(store_dict, feature_map_path / str(label[0].item()) / f"{str(counter)}.pth")
     counter += 1

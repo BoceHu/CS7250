@@ -12,9 +12,10 @@ from tqdm import tqdm
 from model.cifar10_model import cifar10net
 from model.resnet import ResNet, BasicBlock
 import matplotlib.pyplot as plt
+from rotate_imgs import rotate_image
 
 
-def get_feature_map(output, N=2):
+def get_feature_map(output, N=8):
 
     # input C x H x W
     output_sum = torch.sum(output, dim=(1, 2))
@@ -29,6 +30,9 @@ def get_feature_map(output, N=2):
     equi_feature_map = torch.mean(selected_slice, dim=0)
     
     return equi_feature_map
+
+minimum_angle_of_rotation = 45
+angles = range(0, 360, minimum_angle_of_rotation)
 
 
 MEAN = np.array([125.3, 123.0, 113.9]) / 255.0  # = np.array([0.49137255, 0.48235294, 0.44666667])
@@ -45,7 +49,7 @@ transform = transforms.Compose([
     normalize
 ])
 
-train_data_path = Path.cwd() / 'cifar10/cifar10_64/train'
+# train_data_path = Path.cwd() / 'cifar10/cifar10_64/train'
 test_data_path = Path.cwd() / 'cifar10/cifar10_64/test'
 
 # feature maps
@@ -58,7 +62,7 @@ train_loader = DataLoader(train_dataset, batch_size=1, shuffle=False, num_worker
 test_loader = DataLoader(test_dataset, batch_size=1, shuffle=False, num_workers=2)
 
 # equivariant
-eqnet = cifar10net(N=2)
+eqnet = cifar10net(N=4, flip=True, initialize=False)
 # regular CNN
 net = ResNet(BasicBlock, [2, 2, 2, 2])
 
@@ -69,7 +73,7 @@ net.eval()
 eqnet.eval()
 
 # equivariant
-eqnet.load_state_dict(torch.load('best_model_C2.pth'))
+eqnet.load_state_dict(torch.load('best_model_D4.pth'))
 # regular CNN
 net.load_state_dict(torch.load('best_model_CNN.pth'))
 
@@ -77,14 +81,12 @@ counter = 0
 
 for data in tqdm(train_loader):
 
+    # gets the rotated images
     inputs, label = data[0].to(device), data[1].to(device)
-
-    C, H, W = inputs.shape[1], inputs.shape[2], inputs.shape[3]
-    rot_90 = torch.rot90(inputs[0], k=1, dims=(1, 2)).view(1, C, H, W)
-    rot_180 = torch.rot90(inputs[0], k=2, dims=(1, 2)).view(1, C, H, W)
-    rot_270 = torch.rot90(inputs[0], k=3, dims=(1, 2)).view(1, C, H, W)
-    inputs = torch.vstack([inputs, rot_90, rot_180, rot_270, inputs])
+    rotated_images = [rotate_image(inputs[0], angle) for angle in angles]
+    inputs = torch.stack(rotated_images)
     
+    # gets intermediate results for rotated images
     outputs, resnet_output = net(inputs)
     eq_outputs, eq_resnet_output = eqnet(inputs)
     
@@ -129,29 +131,14 @@ for data in tqdm(train_loader):
     store_dict = dict()
     store_dict['img'] = inputs[0]
     store_dict['eq'] = dict()
-    store_dict['eq'][0] = dict()
-    store_dict['eq'][90] = dict()
-    store_dict['eq'][180] = dict()
-    store_dict['eq'][270] = dict()
-    store_dict['eq'][360] = dict()
     store_dict['CNN'] = dict()
-    store_dict['CNN'][0] = dict()
-    store_dict['CNN'][90] = dict()
-    store_dict['CNN'][180] = dict()
-    store_dict['CNN'][270] = dict()
-    store_dict['CNN'][360] = dict()
-
-    for i in range(inputs.shape[0]):
-
-        rot = 90 * i
-
-        for num, intermediate_output in enumerate(resnet_output):
-            # avg pooling for equi feature map
-            eq_feature_map = get_feature_map(eq_resnet_output[num][i].tensor.squeeze(0))
-            store_dict['eq'][rot]["x"+str(num)] = eq_feature_map
-            # get regular feature map
-            feature_map = get_feature_map(resnet_output[num][i].squeeze(0), N=1)
-            store_dict['CNN'][rot]["x"+str(num)] = feature_map
+    for i, angle in enumerate(angles):
+        store_dict['eq'][angle] = dict()
+        store_dict['CNN'][angle] = dict()
+        # gets terminal GCNN feature map
+        store_dict['eq'][angle]["map"] = get_feature_map(eq_resnet_output[1][i].tensor.squeeze(0))
+        # gets terminal CNN feature map
+        store_dict['CNN'][angle]["map"] = get_feature_map(resnet_output[1][i].squeeze(0), N=1)
 
     torch.save(store_dict, feature_map_path / str(label[0].item()) / f"{str(counter)}.pth")
             
@@ -159,43 +146,64 @@ for data in tqdm(train_loader):
 
 for data in tqdm(test_loader):
 
-    images, label = data[0].to(device), data[1].to(device)
-
-    C, H, W = inputs.shape[1], inputs.shape[2], inputs.shape[3]
-    rot_90 = torch.rot90(inputs[0], k=1, dims=(1, 2)).view(1, C, H, W)
-    rot_180 = torch.rot90(inputs[0], k=2, dims=(1, 2)).view(1, C, H, W)
-    rot_270 = torch.rot90(inputs[0], k=3, dims=(1, 2)).view(1, C, H, W)
-    inputs = torch.vstack([inputs, rot_90, rot_180, rot_270, inputs])
-
-    outputs, resnet_output = net(images)
+    # gets the rotated images
+    inputs, label = data[0].to(device), data[1].to(device)
+    rotated_images = [rotate_image(inputs[0], angle) for angle in angles]
+    inputs = torch.stack(rotated_images)
+    
+    # gets intermediate results for rotated images
+    outputs, resnet_output = net(inputs)
     eq_outputs, eq_resnet_output = eqnet(inputs)
-
+    
     # store feature maps
+    '''
+    dict format:{
+        img: tensor
+        eq:
+            0:
+                x0: tensor
+                x1: tensor
+                ...
+                x4: tensor
+            90:
+                x0: tensor
+                ...
+                x4: tensor
+            180:
+                ...
+            270:
+                ...
+            360:
+                ...
+        CNN:
+            0:
+                x0: tensor
+                x1: tensor
+                ...
+                x4: tensor
+            90:
+                x0: tensor
+                ...
+                x4: tensor
+            180:
+                ...
+            270:
+                ...
+            360:
+                ...
+    }
+    '''
     store_dict = dict()
     store_dict['img'] = inputs[0]
     store_dict['eq'] = dict()
-    store_dict['eq'][0] = dict()
-    store_dict['eq'][90] = dict()
-    store_dict['eq'][180] = dict()
-    store_dict['eq'][360] = dict()
     store_dict['CNN'] = dict()
-    store_dict['CNN'][0] = dict()
-    store_dict['CNN'][90] = dict()
-    store_dict['CNN'][180] = dict()
-    store_dict['CNN'][270] = dict()
-    store_dict['CNN'][360] = dict()
-
-    for i in range(inputs.shape[0]):
-
-        rot = 90 * i
-
-        for num, intermediate_output in enumerate(resnet_output):
-            # avg pooling for equi feature map
-            eq_feature_map = get_feature_map(eq_resnet_output[num][i].tensor.squeeze(0))
-            store_dict['eq'][rot]["x"+str(num)] = eq_feature_map
-            # get regular feature map
-            feature_map = get_feature_map(resnet_output[num][i].squeeze(0), N=1)
-            store_dict['CNN'][rot]["x"+str(num)] = feature_map
+    for i, angle in enumerate(angles):
+        store_dict['eq'][angle] = dict()
+        store_dict['CNN'][angle] = dict()
+        # gets terminal GCNN feature map
+        store_dict['eq'][angle]["map"] = get_feature_map(eq_resnet_output[1][i].tensor.squeeze(0))
+        # gets terminal CNN feature map
+        store_dict['CNN'][angle]["map"] = get_feature_map(resnet_output[1][i].squeeze(0), N=1)
 
     torch.save(store_dict, feature_map_path / str(label[0].item()) / f"{str(counter)}.pth")
 

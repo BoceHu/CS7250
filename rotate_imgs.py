@@ -1,37 +1,39 @@
-from PIL import Image, ImageDraw
+import torch
+import torchvision.transforms.functional as TF
 
+"""
+rotates anti-clockwise (degrees) and masks out pixels that lie 
+outside the inscribing circle
+"""
+def rotate_image(image, angle):
 
-def rotate_square_image(image_path, angle, transparent_background=False):
-    # Load the image
-    img = Image.open(image_path)
+    # rotates image using built in torch function
+    rotated_image = TF.rotate(image, angle)
 
-    # The image is square
-    size = img.size[0]  # Since the image is square, width = height
+    return rotated_image
 
-    # Rotate the image
-    rotated_img = img.rotate(angle, expand=True,
-                             fillcolor=(255, 255, 255))  # Fill outside area with white when rotating
+def circle_mask(image):
+    
+    # sets all pixels' values to be 0 that lie outside of the inscribing circle
+    C, H, W = image.shape
+    center_x, center_y = W // 2, H // 2
+    radius = min(center_x, center_y)
+    
+    # determines which indicies lie outside circle
+    Y, X = torch.meshgrid(torch.arange(H), torch.arange(W), indexing='ij')
+    distance_from_center = torch.sqrt((X - center_x)**2 + (Y - center_y)**2)
+    
+    # defines our mask
+    mask = distance_from_center <= radius
+    mask = mask.unsqueeze(0).repeat(C, 1, 1)
+    
+    # masks out everything outside circle
+    image[~mask] = 0
 
-    # Create a mask to keep only the circle in the center
-    mask = Image.new('L', rotated_img.size, 0)
-    draw = ImageDraw.Draw(mask)
-    # Calculate the center of the rotated image
-    cx, cy = rotated_img.size[0] // 2, rotated_img.size[1] // 2
-    # Calculate radius to fit the original size
-    radius = size // 2
-    draw.ellipse(((cx - radius, cy - radius), (cx + radius, cy + radius)), fill=255)  # Draw a filled circle
+    return image
 
-    # Apply the mask to the rotated image and convert to RGB to drop alpha channel
-    final_img = Image.new('RGB', rotated_img.size, (255, 255, 255))  # Use a white background for the new final image
-
-    final_img.paste(rotated_img.convert("RGB"), mask=mask)  # Convert to RGB to ignore the alpha channel
-
-    # Optional: Crop the image back to the original size if desired
-    final_img = final_img.crop((cx - size // 2, cy - size // 2, cx + size // 2, cy + size // 2))
-
-    return final_img
 
 
 if __name__ == '__main__':
-    result_img = rotate_square_image("cifar10/cifar10_64/train/bird/img6.png", 98)
-    result_img.show()
+    None
+
