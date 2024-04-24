@@ -26,20 +26,20 @@ def rotate_image(image, angle):
     rotated_image = TF.rotate(image, angle)
 
     # sets all pixels' values to be 0 that lie outside of the inscribing circle
-    C, H, W = image.shape
-    center_x, center_y = W // 2, H // 2
-    radius = min(center_x, center_y)
+    # C, H, W = image.shape
+    # center_x, center_y = W // 2, H // 2
+    # radius = min(center_x, center_y)
     
-    # determines which indicies lie outside circle
-    Y, X = torch.meshgrid(torch.arange(H), torch.arange(W), indexing='ij')
-    distance_from_center = torch.sqrt((X - center_x)**2 + (Y - center_y)**2)
+    # # determines which indicies lie outside circle
+    # Y, X = torch.meshgrid(torch.arange(H), torch.arange(W), indexing='ij')
+    # distance_from_center = torch.sqrt((X - center_x)**2 + (Y - center_y)**2)
     
-    # defines our mask
-    mask = distance_from_center < radius
-    mask = mask.unsqueeze(0).repeat(C, 1, 1)
+    # # defines our mask
+    # mask = distance_from_center <= radius
+    # mask = mask.unsqueeze(0).repeat(C, 1, 1)
     
-    # masks out everything outside circle
-    rotated_image[~mask] = 0
+    # # masks out everything outside circle
+    # rotated_image[~mask] = 0
 
     return rotated_image
 
@@ -65,6 +65,25 @@ def circle_mask(image):
     image[~mask] = 0
 
     return image
+
+# def eval_mask(image):
+
+#     # sets all pixels' values to be 0 that lie outside of the inscribing circle
+#     H, W = image.shape
+#     center_x, center_y = W // 2, H // 2
+#     radius = min(center_x, center_y)
+    
+#     # determines which indicies lie outside circle
+#     Y, X = torch.meshgrid(torch.arange(H), torch.arange(W), indexing='ij')
+#     distance_from_center = torch.sqrt((X - center_x)**2 + (Y - center_y)**2)
+    
+#     # defines our mask
+#     mask = distance_from_center <= radius
+    
+#     # masks out everything outside circle
+#     new_image = image.flatten()[mask.flatten()]
+
+#     return new_image
 
 def get_feature_map(output, N=8):
 
