@@ -6,21 +6,40 @@ import csv
 from pathlib import Path
 import glob
 from tqdm import tqdm
-from rotate_imgs import rotate_image
+from rotate_imgs import rotate_image, circle_mask
 
 
 def cos_score(base, result, angle):
 
+    base = base /torch.max(base)
+    result = result / torch.max(result)
+
     base = base.flatten()
     rotated_back_result =rotate_image(result.unsqueeze(0), -angle).flatten()
+
+    # eval_base = eval_mask(base)
+    # eval_result = eval_mask(rotated_back_result)+
+    # sim = F.cosine_similarity(eval_base, eval_result, dim=0)
+
     sim = F.cosine_similarity(base, rotated_back_result, dim=0)
+
     return sim.item()
 
 def mse_score(base, result, angle):
+
+    base = base /torch.max(base)
+    result = result / torch.max(result)
+
     base = base.flatten()
     rotated_back_result =rotate_image(result.unsqueeze(0), -angle).flatten()
 
+    # eval_base = eval_mask(base)
+    # eval_result = eval_mask(rotated_back_result)
+
+    # sim = mean_squared_error(eval_base, eval_result)
+
     sim = mean_squared_error(base, rotated_back_result)
+
     return sim.item()
 
 
@@ -79,5 +98,4 @@ with open('data_back_up.csv', 'w', newline='') as csv_file:
                         new_row["cos"] = cos_score(base[name], feature_map, rot)
                         new_row["mse"] = mse_score(base[name], feature_map, rot)
 
-                    
                     writer.writerow(new_row)
